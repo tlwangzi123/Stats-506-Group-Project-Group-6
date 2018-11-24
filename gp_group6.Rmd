@@ -1,0 +1,132 @@
+---
+title: "Zero-Truncated Negative Binomial Regression"
+author: 'Group 6: Zi Wang, Dong Ding and Junfeng Luo'
+date: "11/24/2018"
+output: html_document
+---
+## Introduction to Zero-Truncated Negative Binomial Regression
+Zero-truncated Negative Binomial Regression is used to model count data 
+for which the value zero cannot occur and for which over dispersion exists. 
+There are a lot of response variables that cannot have a value of 0, 
+such as the duration patients are in hospital and the age of an animal. 
+When people want to use regression on these count variables, 
+they may want to use Negative Binomial Regression first 
+because it is a useful model for the count data. 
+However, it is the underlying assumption of Negative Binomial distributions 
+that may cause a problem as these distributions allow zeros 
+within their range of possible values. If the mean of the response is small, 
+and it does not contain zeros,then the estimated parameters and standard errors
+obtained by GLM may be biased, which means 
+the Negative Binomial Regression model does not fit well. 
+In this situation, the Zero-Truncated Negative Binomial Regression model 
+can be used to solve this problem.
+
+### Data Background
+The data used in this tutorial is the Abalone Dataset, which comes from 
+an original study about The Population Biology of Abalone by Warwick J Nash, 
+Tracy L Sellers, Simon R Talbot, Andrew J Cawthorn and Wes B Ford (1994). 
+The link of the data: https://www.kaggle.com/rodolfomendes/abalone-dataset . 
+We will focusing on the following variables: 
+Rings(Can give the age of the Abalone in years by adding 1.5), 
+Sex(M, F, and I (infant)) and Length(Longest shell measurement). 
+The response variable is Rings.
+
+## R
+
+Load the data into R using `read.csv`
+```{r import, echo = TRUE,message = FALSE}
+library(VGAM)
+library(tidyverse)
+library(MASS)
+abalone_full = read.csv("abalone.csv")
+```
+
+Use the function `distinct` from `dplyr` package to select the variable 
+that we want and remove replicate rows. 
+Show the dimension and the summary of the new data named *abalone*. 
+```{r select, echo = TRUE}
+abalone = abalone_full %>%
+  distinct(Rings, Sex, Length)
+dim(abalone)
+```
+
+```{r summary_2, echo = TRUE}
+summary(abalone)
+```
+
+Show the first 10 rows of the data *abalone*:
+```{r show_1, echo = TRUE}
+abalone[1:10,]
+```
+
+Now, we are going to visualize the response *Rings* to test whether our dataset 
+is suitable to use the Zero-Truncated Negative Binomial Regression model.   
+At first, from the summary of the data and the decription of the variables, 
+the response *Rings* is a count variable that cannot have a value of 0.  
+In addition, show the mean, standard deviation and histogram 
+of the response *Rings*:
+```{r show_2, echo = TRUE}
+sprintf("The Mean of Rings = %4.3f, and the SD of Rings = %4.3f", 
+        mean(abalone$Rings), sd(abalone$Rings))
+```
+
+```{r hist, echo = TRUE}
+hist(abalone$Rings, xlab = "Rings", main = "Histogram of Rings")
+```
+  
+The results show that the variable *Rings* has small means, 
+and exists over dispersion.
+Therefore, the Zero-Truncated Negative Binomial Regression model 
+is suitable for modeling our dataset.
+
+
+Use function `vglm` in `VGAM` package to use 
+Zero-Truncated Negative Binomial Regression on the data *abalone* 
+```{r TNB_1, echo = TRUE}
+t_nb1= vglm(Rings ~ Sex + Length, 
+            family = posnegbinomial(), data = abalone)
+summary(t_nb1)
+```
+The Log-likelihood of the model is -4294.895
+
+Fit the Negative Binomial Regression using `glm.nb` in `MASS` package 
+on the data *abalone*
+```{r NB_1, echo = TRUE}
+nb1 = glm.nb(Rings ~ Sex + Length, data = abalone)
+summary(nb1)
+```
+The Log-likelihood of the model is -8590.748/2 = -4295.874  
+
+Compare these two models using Log-likelihood:  
+Because -4294.895 > -4295.874, we can conclude that 
+the Zero-Truncated Negative Binomial Regression model fits better than 
+the Negative Binomial Regression model.
+
+Finally, interpret the fitting result.  
+The formula of the Zero-Truncated Negative Binomial Regression model is:
+$$ Y_{i} \sim NB(\mu_{i}, k) $$
+$$ E(Y_{i}) = \mu_{i}, Var(Y_{i}) = \mu_{i}+\frac{\mu_{i}^2}{k}$$
+$$ ln(\mu_{i}) = \beta_{0} + \beta_{1}X_{i1} +...+ \beta_{p}X_{ip}$$
+From the summary of the Zero-Truncated Negative Binomial Regression model,
+we have:  
+The value of the coefficient for *SexI*, -0.14064 suggests that 
+the log count of Rings for Infant Abalone is 0.14064 less than Female Abalone.  
+The value of the coefficient for *SexM*, -0.02083 suggests that 
+the log count of Rings for Male Abalone is 0.02083 less than Female Abalone.  
+The value of the coefficient for *Length*, 1.50445 suggests that 
+the log count of Rings increases by 1.50445 for each mm increase 
+in Longest shell measurement.  
+The value of the first intercept 1.63153 is the log count of the Rings 
+when all predictors equal zero.  
+The value of the second intercept 5.19065 is the value of 
+the over dispersion parameter *k*.
+
+## SAS
+
+
+## Stata
+
+
+## References
+1. http://highstat.com/index.php/mixed-effects-models-and-extensions-in-ecology-with-r
+2. Wikipedia: Truncated regression model
