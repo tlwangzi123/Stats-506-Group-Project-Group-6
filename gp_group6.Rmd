@@ -46,7 +46,8 @@ that we want and remove replicate rows.
 Show the dimension and the summary of the new data named *abalone*. 
 ```{r select, echo = TRUE}
 abalone = abalone_full %>%
-  distinct(Rings, Sex, Length)
+  distinct(Rings, Sex, Length) %>%
+  arrange(Rings, Sex, Length)
 dim(abalone)
 ```
 
