@@ -11,7 +11,7 @@ label values Sex1 Sex_codes
 save abalone, replace
 tab1 Sex1
 summarize Length Rings
-histogram Rings, discrete
+histogram Rings, discret
 
 tnbreg Rings i.Sex1 Length, ll(0)
 
