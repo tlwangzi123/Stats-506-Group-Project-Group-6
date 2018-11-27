@@ -1,0 +1,121 @@
+---
+title: "Zero-Truncated Negative Binomial Regression"
+author: 'Group 6: Zi Wang, Dong Ding and Junfeng Luo'
+date: "11/24/2018"
+output: html_document
+---
+## Introduction to Zero-Truncated Negative Binomial Regression
+Zero-truncated Negative Binomial Regression is used to model count data 
+for which the value zero cannot occur and for which over dispersion exists. 
+There are a lot of response variables that cannot have a value of 0, 
+such as the duration patients are in hospital and the age of an animal. 
+When people want to use regression on these count variables, 
+they may want to use Negative Binomial Regression first 
+because it is a useful model for the count data. 
+However, it is the underlying assumption of Negative Binomial distributions 
+that may cause a problem as these distributions allow zeros 
+within their range of possible values. If the mean of the response is small, 
+and it does not contain zeros,then the estimated parameters and standard errors
+obtained by GLM may be biased, which means 
+the Negative Binomial Regression model does not fit well. 
+In this situation, the Zero-Truncated Negative Binomial Regression model 
+can be used to solve this problem.
+
+### Data Background
+The data used in this tutorial is the Abalone Dataset, which comes from 
+an original study about The Population Biology of Abalone by Warwick J Nash, 
+Tracy L Sellers, Simon R Talbot, Andrew J Cawthorn and Wes B Ford (1994). 
+The link of the data: https://www.kaggle.com/rodolfomendes/abalone-dataset . 
+We will focusing on the following variables: 
+Rings(Can give the age of the Abalone in years by adding 1.5), 
+Sex(M, F, and I (infant)) and Length(Longest shell measurement). 
+The response variable is Rings.
+
+## Stata
+
+Load the data into Stata using `import`.
+```{stata import, echo = TRUE, message = FALSE, eval = FALSE}
+clear
+import delimited abalone.csv, case(preserve)
+```
+
+We are only interested in these three variables: `Rings`, `Sex` and `Length`. We only keep these variables in our dataset, sort them by value and remove duplicates.
+```{stata select, echo = TRUE, message = FALSE, eval = FALSE}
+keep Rings Sex Length
+sort Rings Sex Length 
+duplicates drop
+```
+
+Generate a new column named Sex1 that denotes the genre. 0 for `Female`, 1 for `Infant`, 2 for `Male`.
+```{stata, echo = TRUE, message = FALSE, eval = FALSE}
+gen Sex1 = 0
+replace Sex1 = 1 if Sex == "I"
+replace Sex1 = 2 if Sex == "M"
+label define Sex_codes 0 "F" 1 "I" 2 "M", replace
+```
+
+Relabel them as `values`, `Sex1`, `Sex_codes`. Save the new dataset.
+```{stata relabel, echo = TRUE, message = FALSE, eval = FALSE}
+label values Sex1 Sex_codes
+save abalone, replace
+```
+
+Visualize the tabulation of `Sex1`.
+```{stata tabulation, echo = TRUE, message = FALSE, eval = FALSE}
+tab1 Sex1
+```
+
+Visualize the summarize of `Length` and `Rings`.
+```{stata summarize, echo = TRUE, message = FALSE, eval = FALSE}
+summarize Length Rings
+```
+
+Then, visualize the histogram of `Rings`.
+```{stata histogram, echo = TRUE, message = FALSE, eval = FALSE}
+histogram Rings, discrete
+```
+
+The tnbreg command will analyze models that are left truncated on any value not just zero. The ztnb command previously was used for zero-truncated negative binomial regression, but is no longer supported in Stata12 and has been superseded by tnbreg.
+```{stata tnbreg, echo = TRUE, message = FALSE, eval = FALSE}
+tnbreg Rings i.Sex1 Length, ll(0)
+```
+
+The output looks very much like the output from an OLS regression:
+
+* It begins with the iteration log giving the values of the log likelihoods starting with a model that has no predictors.
+
+* The last value in the log (-4294.9849) is the final value of the log likelihood for the full model and is repeated below.
+
+* Next comes the header information. On the right-hand side the number of observations used (1670) is given along with the likelihood ratio chi-squared with three degrees of freedom for the full model, followed by the p-value for the chi-square. The model, as a whole, is statistically significant.
+
+* The header also includes a pseudo-R2, which is quite low in this example (0.0766).
+
+* Below the header you will find the zero-truncated negative binomial coefficients for each of the variables along with standard errors, z-scores, p-values and 95% confidence intervals for each coefficient.
+
+* The output also includes an ancillary parameter **/lnalpha** which is the natural log of the over dispersion parameter.
+
+* Below that, is the the overdispersion parameter **alpha** along with its standard error and 95% confidence interval.
+
+* Finally, the last line of output is the likelihood-ratio chi-square test that **alpha** is equal to zero along with its p-value.
+
+Looking through the results we see the following:
+
+* The value of the coefficient for `Sex1_M`, -0.0208333, suggests that the log count of `Rings` decreases by 0.0208333 for each unit increase in `Sex1_I` group. This coefficient is not statistically significant.
+
+* The coefficient for `Sex1_I`, -0.1406382, is significant and indicates that the log count of `Rings` for Infants is 0.1406382 less than for non-Infants.
+
+* The log count of `length` is 1.504444 more.
+
+* The value of the constant (_cons), 1.631531 is log count of the `Rings` when all of the predictors equal zero.
+
+We fit it again using *Negative Binomial Regression* using `nbreg`.
+```{stata tnbreg, echo = TRUE, message = FALSE, eval = FALSE}
+nbreg Rings i.Sex1 Length
+```
+
+Compare these two models using Log-likelihood:  
+Because -4294.895 > -4295.874, we can conclude that the Zero-Truncated Negative Binomial Regression model fits better than the Negative Binomial Regression model.
+
+## References
+1. http://highstat.com/index.php/mixed-effects-models-and-extensions-in-ecology-with-r
+2. Wikipedia: Truncated regression model
