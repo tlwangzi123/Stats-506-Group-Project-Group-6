@@ -20,6 +20,12 @@ obtained by GLM may be biased, which means
 the Negative Binomial Regression model does not fit well. 
 In this situation, the Zero-Truncated Negative Binomial Regression model 
 can be used to solve this problem.
+The formula of the Zero-Truncated Negative Binomial Regression model is:
+$$ Y_{i} \sim NB(\mu_{i}, k) $$
+$$ E(Y_{i}) = \mu_{i}, Var(Y_{i}) = \mu_{i}+\frac{\mu_{i}^2}{k}$$
+The link function: $$ ln(\mu_{i}) = \eta_{i}$$
+
+The linear predictor: $$ \eta_{i} = \beta_{0} + \beta_{1}X_{i1} +...+ \beta_{p}X_{ip}$$ .
 
 ### Data Background
 The data used in this tutorial is the Abalone Dataset, which comes from 
@@ -31,7 +37,9 @@ Rings(Can give the age of the Abalone in years by adding 1.5),
 Sex(M, F, and I (infant)) and Length(Longest shell measurement). 
 The response variable is Rings.
 
-## R
+## Languages {.tabset .tabset-fade}
+
+### R
 
 Load the data into R using `read.csv`
 ```{r import, echo = TRUE,message = FALSE}
@@ -104,10 +112,6 @@ the Zero-Truncated Negative Binomial Regression model fits better than
 the Negative Binomial Regression model.
 
 Finally, interpret the fitting result.  
-The formula of the Zero-Truncated Negative Binomial Regression model is:
-$$ Y_{i} \sim NB(\mu_{i}, k) $$
-$$ E(Y_{i}) = \mu_{i}, Var(Y_{i}) = \mu_{i}+\frac{\mu_{i}^2}{k}$$
-$$ ln(\mu_{i}) = \beta_{0} + \beta_{1}X_{i1} +...+ \beta_{p}X_{ip}$$
 From the summary of the Zero-Truncated Negative Binomial Regression model,
 we have:  
 The value of the coefficient for *SexI*, -0.14064 suggests that 
@@ -122,12 +126,254 @@ when all predictors equal zero.
 The value of the second intercept 5.19065 is the value of 
 the over dispersion parameter *k*.
 
-## SAS
+
+### SAS
+
+Firstly, we need to load our dataset into sas.
+Here, because we directly use the csv file, 
+we will use the command `infile`, and `dlm` as ','.
+We will start at the second line, 
+so we have `firstobs = 2`.
+We use `dsd` here in order to avoid separation caused by 
+comma in characters.
+We use `missover` to avoid jumpng to the next line when reading a short line.
+In sas, we also need to set variable names for all 
+the variables in the dataset.
+`$` is for character variable. 
+```{r SAS_load, echo=TRUE, eval=FALSE}
+data abalone_full;
+  infile './abalone.csv' dlm = ',' dsd missover firstobs = 2;
+  input Sex $
+        Length
+		Diameter
+		Height
+        Whole_weight
+        Shucked_weight
+		Viscera_weight
+		Shell_weight
+        Rings;
+run;
+```
+
+We only want to learn the relationship between age, sex 
+and length, thus we only keep these variables.
+Then we do not want to have duplicate rows,
+so we use the command `noduplicates` to remove those lines
+appear more than once,
+and then to make the dataset beautiful,
+we sort the dataset by *Rings*, *Sex* and *Length*.
+```{r SAS_data_manipulation,echo=TRUE, eval=FALSE }
+data abalone;
+set abalone_full;
+keep Rings Sex Length;
+proc sort data = abalone out = abalone noduplicates;
+by Rings Sex Length;
+run;
+```
+
+Here, we want to see what the dataset looks like.
+We list 10 obervations here. 
+```{r SAS_first_10_lines,echo=TRUE, eval=FALSE}
+proc print data = abalone(obs=10);
+run;
+```
+
+Below is the result.
+
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/firsttenrows.jpg)
+
+Next, we should have a basic impression of each 
+variable.
+We start with *Sex*, and we use command `proc freq` and `tables`
+to create a frequency table for variable *Sex*.
+```{r SAS_summary_sex,echo=TRUE, eval=FALSE}
+proc freq data = abalone;
+  tables Sex;
+run;
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/sexfreqtable.jpg)
+
+We then use command `proc means` to create summary of 
+*Length*.
+```{r SAS_summary_length, echo=TRUE, eval=FALSE}
+proc means data = abalone;
+var Length;
+run;
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/lengthsummary.jpg)
+
+Similarly, we use command `proc means` to create summary of
+*Rings*. 
+```{r SAS_summary_rings, echo=TRUE, eval=FALSE}
+proc means data = abalone;
+var Rings;
+run;
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/ringssummary.jpg)
+
+We want to do a univariate summary about the variable
+*Rings*, and then draw a histogram about the variable.
+We do not want the summary to be shown in the results,
+so we use `proc univariate` with the option `noprint` here. 
+```{r SAS_summary_hist_rings,echo=TRUE, eval=FALSE}
+proc univariate data = abalone noprint;
+var Rings;
+histogram;
+run;
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/ringshist.jpg)
+
+Here we do factorization about variable *Sex*.
+```{r SAS_factor_sex, echo=TRUE, eval=FALSE}
+data abalone;
+set abalone;
+  if Sex = 'F' then SexF = 1;
+    else SexF = 0;
+  if Sex = 'I' then SexI = 1;
+    else SexI = 0;
+  if Sex = 'M' then SexM = 1;
+    else SexM = 0;
+run;
+```
+
+We use the command `proc nlmixed` to run zero-truncated negative binomial 
+regression about the dataset.
+```{r SAS_zero_truncated_nbr, echo=TRUE, eval=FALSE}
+proc nlmixed data = abalone;
+  log_mu = intercept + b_SexI*SexI + b_SexM*SexM + b_Length*Length;
+  mu = exp(log_mu);
+  het = 1/alpha;
+  ll = lgamma(Rings+het) - lgamma(Rings+1) - lgamma(het) 
+       - het*log(1+alpha*mu) + Rings*log(alpha*mu) 
+       - Rings*log(1+alpha*mu) - log(1 - (1 + alpha * mu)**-het);
+  model Rings ~ general(ll);
+run;
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/zero-tnb1.jpg)
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/zero-tnb2.jpg)
+
+We also want to compare the results of zero-truncted negative binomial
+regression, and normal negative binomial regression.
+We use command `proc genmod` to do the normal negative binomial regression.
+```{r SAS_nbr, echo=TRUE, eval=FALSE}
+proc genmod data = abalone;
+  class Sex (param = ref ref = first);
+  model Rings = Sex Length / type3 dist = negbin;
+run;
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/nb1.jpg)
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/nb2.jpg)
 
 
-## Stata
+### Stata
+Load the data into Stata using `import`.
+```{stata read, echo = TRUE, message = FALSE, eval = FALSE}
+clear
+import delimited abalone.csv, case(preserve)
+```
 
+We are only interested in these three variables: *Rings*, *Sex* and *Length*. We only keep these variables in our dataset, sort them by value and remove duplicates.
+```{stata keep, echo = TRUE, message = FALSE, eval = FALSE}
+keep Rings Sex Length
+sort Rings Sex Length 
+duplicates drop
+```
+
+Generate a new column named Sex1 that denotes the genre. 0 for *Female*, 1 for *Infant*, 2 for *Male*.
+```{stata create, echo = TRUE, message = FALSE, eval = FALSE}
+gen Sex1 = 0
+replace Sex1 = 1 if Sex == "I"
+replace Sex1 = 2 if Sex == "M"
+label define Sex_codes 0 "F" 1 "I" 2 "M", replace
+```
+
+Relabel them as *values*, *Sex1*, *Sex_codes*. Save the new dataset.
+```{stata relabel, echo = TRUE, message = FALSE, eval = FALSE}
+label values Sex1 Sex_codes
+save abalone, replace
+```
+
+Visualize the tabulation of *Sex1*.
+```{stata tabulation, echo = TRUE, message = FALSE, eval = FALSE}
+tab1 Sex1
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/tabulation_Sex1.png)
+
+
+Visualize the summarize of *Length* and *Rings*.
+```{stata summarize, echo = TRUE, message = FALSE, eval = FALSE}
+summarize Length Rings
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/summarize_Length_Rings.png)
+
+Then, visualize the histogram of *Rings*.
+```{stata histogram, echo = TRUE, message = FALSE, eval = FALSE}
+histogram Rings, discrete
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/histogram_Rings.png)
+
+The `tnbreg` command will analyze models that are left truncated on any value not just zero. The `ztnb` command previously was used for zero-truncated negative binomial regression, but is no longer supported in Stata12 and has been superseded by `tnbreg`.
+```{stata tnbreg, echo = TRUE, message = FALSE, eval = FALSE}
+tnbreg Rings i.Sex1 Length, ll(0)
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/tnbreg_part1.png)
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/tnbreg_part2.png)
+
+The output looks very much like the output from an OLS regression:
+
+* It begins with the iteration log giving the values of the log likelihoods starting with a model that has no predictors.
+
+* The last value in the log (-4294.9849) is the final value of the log likelihood for the full model and is repeated below.
+
+* Next comes the header information. On the right-hand side the number of observations used (1670) is given along with the likelihood ratio chi-squared with three degrees of freedom for the full model, followed by the p-value for the chi-square. The model, as a whole, is statistically significant.
+
+* The header also includes a pseudo-R2, which is quite low in this example (0.0766).
+
+* Below the header you will find the zero-truncated negative binomial coefficients for each of the variables along with standard errors, z-scores, p-values and 95% confidence intervals for each coefficient.
+
+* The output also includes an ancillary parameter **/lnalpha** which is the natural log of the over dispersion parameter.
+
+* Below that, is the the overdispersion parameter **alpha** along with its standard error and 95% confidence interval.
+
+* Finally, the last line of output is the likelihood-ratio chi-square test that **alpha** is equal to zero along with its p-value.
+
+Looking through the results we see the following:
+
+* The value of the coefficient for *Sex1_M*, -0.0208333, suggests that the log count of *Rings* decreases by 0.0208333 for each unit increase in *Sex1_I* group. This coefficient is not statistically significant.
+
+* The coefficient for *Sex1_I*, -0.1406382, is significant and indicates that the log count of *Rings* for Infants is 0.1406382 less than for non-Infants.
+
+* The log count of *length* is 1.504444 more.
+
+* The value of the constant (_cons), 1.631531 is log count of the *Rings* when all of the predictors equal zero.
+
+
+We fit it again using *Negative Binomial Regression* using `nbreg`.
+```{stata nbreg, echo = TRUE, message = FALSE, eval = FALSE}
+nbreg Rings i.Sex1 Length
+```
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/nbreg_part1.png)
+![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/Junfeng-Luo/stata_picture/nbrg_part2.png)
+
+Compare these two models using Log-likelihood:  
+Because -4294.9849 > -4295.3738, we can conclude that the Zero-Truncated Negative Binomial Regression model fits better than the Negative Binomial Regression model.
+
+## Things to Consider
+From the example above, we can see that the coefficient of Zero-Truncated Negative Binomial Regression in SAS part has some differences between that in R and Stata. Because it may cause some accuracy errors when to use iteration method in SAS to maximize the log-likelihood function in order to find the estimators because of limitation in R in the convergence procedure.  
+Besides, we can see that even if the Log-likelihood criterion 
+shows the Zero-Truncated Negative Binomial Regression model fits better than 
+the Negative Binomial Regression model, the estimated parameters and 
+standard errors obtained by Negative Binomial Regression and 
+Zero-Truncated Negative Binomial Regression is very similar.
+Thus, we can conclude that if the mean is not very close to 0, 
+the truncation problem can be ignored if there is no strict limit of 
+the accuracy for the regression results. In this case, both 
+the Negative Binomial Regression model and 
+the Zero-Truncated Negative Binomial Regression model are good models.
 
 ## References
 1. http://highstat.com/index.php/mixed-effects-models-and-extensions-in-ecology-with-r
 2. Wikipedia: Truncated regression model
+3. https://stats.idre.ucla.edu/r/dae/zero-truncated-negative-binomial/
+4. https://stats.idre.ucla.edu/sas/dae/zero-truncated-negative-binomial/
+5. https://stats.idre.ucla.edu/stata/dae/zero-truncated-negative-binomial/
