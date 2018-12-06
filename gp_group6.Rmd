@@ -20,6 +20,12 @@ obtained by GLM may be biased, which means
 the Negative Binomial Regression model does not fit well. 
 In this situation, the Zero-Truncated Negative Binomial Regression model 
 can be used to solve this problem.
+The formula of the Zero-Truncated Negative Binomial Regression model is:
+$$ Y_{i} \sim NB(\mu_{i}, k) $$
+$$ E(Y_{i}) = \mu_{i}, Var(Y_{i}) = \mu_{i}+\frac{\mu_{i}^2}{k}$$
+The link function: $$ ln(\mu_{i}) = \eta_{i}$$
+
+The linear predictor: $$ \eta_{i} = \beta_{0} + \beta_{1}X_{i1} +...+ \beta_{p}X_{ip}$$ .
 
 ### Data Background
 The data used in this tutorial is the Abalone Dataset, which comes from 
@@ -106,10 +112,6 @@ the Zero-Truncated Negative Binomial Regression model fits better than
 the Negative Binomial Regression model.
 
 Finally, interpret the fitting result.  
-The formula of the Zero-Truncated Negative Binomial Regression model is:
-$$ Y_{i} \sim NB(\mu_{i}, k) $$
-$$ E(Y_{i}) = \mu_{i}, Var(Y_{i}) = \mu_{i}+\frac{\mu_{i}^2}{k}$$
-$$ ln(\mu_{i}) = \beta_{0} + \beta_{1}X_{i1} +...+ \beta_{p}X_{ip}$$
 From the summary of the Zero-Truncated Negative Binomial Regression model,
 we have:  
 The value of the coefficient for *SexI*, -0.14064 suggests that 
@@ -123,6 +125,7 @@ The value of the first intercept 1.63153 is the log count of the Rings
 when all predictors equal zero.  
 The value of the second intercept 5.19065 is the value of 
 the over dispersion parameter *k*.
+
 
 ### SAS
 
@@ -355,7 +358,22 @@ nbreg Rings i.Sex1 Length
 Compare these two models using Log-likelihood:  
 Because -4294.9849 > -4295.3738, we can conclude that the Zero-Truncated Negative Binomial Regression model fits better than the Negative Binomial Regression model.
 
+## Things to Consider
+From the example above, we can see that the coefficient of Zero-Truncated Negative Binomial Regression in SAS part has some differences between that in R and Stata. Because it may cause some accuracy errors when to use iteration method in SAS to maximize the log-likelihood function in order to find the estimators because of limitation in R in the convergence procedure.  
+Besides, we can see that even if the Log-likelihood criterion 
+shows the Zero-Truncated Negative Binomial Regression model fits better than 
+the Negative Binomial Regression model, the estimated parameters and 
+standard errors obtained by Negative Binomial Regression and 
+Zero-Truncated Negative Binomial Regression is very similar.
+Thus, we can conclude that if the mean is not very close to 0, 
+the truncation problem can be ignored if there is no strict limit of 
+the accuracy for the regression results. In this case, both 
+the Negative Binomial Regression model and 
+the Zero-Truncated Negative Binomial Regression model are good models.
 
 ## References
 1. http://highstat.com/index.php/mixed-effects-models-and-extensions-in-ecology-with-r
 2. Wikipedia: Truncated regression model
+3. https://stats.idre.ucla.edu/r/dae/zero-truncated-negative-binomial/
+4. https://stats.idre.ucla.edu/sas/dae/zero-truncated-negative-binomial/
+5. https://stats.idre.ucla.edu/stata/dae/zero-truncated-negative-binomial/
