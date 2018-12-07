@@ -1,6 +1,6 @@
 # Stats-506-Group-Project-Group-6
 This is the official git repo of what group 6 done in Stats 506 Group Project.  
-The file abalone.csv is the data we used to analysis.  
+The file abalone.csv is the data we use to analysis.  
 The file gp_group6.Rmd is the Rmarkdown file.    
 The file gp_group6.html is the html result of gp_group6.Rmd.  
 The file gp.R is the R script that Zi Wang wrote.    
