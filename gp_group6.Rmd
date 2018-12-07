@@ -160,8 +160,6 @@ the Negative Binomial Regression model.
 
 
 ### SAS {.tabset .tabset-fade}
-The complete code of sas process:
-https://github.com/tlwangzi123/Stats-506-Group-Project-Group-6/raw/master/gp.sas
 
 #### Data cleaning
 Firstly, we need to load our dataset into sas.
@@ -296,6 +294,26 @@ run;
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/zero-tnb1.jpg)
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/zero-tnb2.jpg)
 
+From the summary of the Zero-Truncated Negative Binomial Regression model above,
+we can see that at first the intercept is 1.64, which is not 0 here. Because we use the variable
+'Rings' to make prediction about the age of abalone, thus there is a basic value for that, as Rings 
+plus 1.5 is the age.  
+This value is significant, because the p-value is less than 0.0001 less than 0.05, which is pretty fit for the fact
+that the adjustment is 1.5 because the intercept is close to that.  
+The coefficient of 'b_Sexl' is -0.14, which is significant because p-value is less than 0.0001 less than 0.05. 
+This value indicates that the log count rings of infant abalones is 0.14 less than the log count
+of female abalones when all else factors remaining the same.
+This makes sense because the age of infant abalone should be smaller than adult abalone.
+The coefficient of 'b_SexM' is -0.02, which is not significant because the p-value is 0.21 greater 
+than 0.05. This means that the log counts of rings between male and female abalones has not significant differences,
+when other factors are the same.  
+Thus, we do not need to use different models to predict the age of abalone for different sexs.  
+The coefficient of 'b_Length' is 1.49, which is significant because p-value is less than 0.0001 less than 0.05. 
+Thus, when the length of abalone increases one unit, the log count of its rings will increases 1.49 unit. 
+This gives us the idea that larger ablones for most of the time should be older.  
+We also have estimate of alpha here. The estimate is close to zero, which indicates that we can also use
+zero-truncated poisson regression to fit the model in this example. 
+
 #### NB Regression and Comparison of the two models
 We also want to compare the results of zero-truncted negative binomial
 regression, and normal negative binomial regression.
@@ -312,30 +330,10 @@ run;
 The Log-likelihood of the zero-truncated negative binomial regression model is -4296.75.
 The log-likelihood of the negative binomial regression model is -4295.38
 
-From the summary of the Zero-Truncated Negative Binomial Regression model above,
-we can see that at first the intercept is 1.6369, which is not 0 here. Because we use the variable
-'Rings' to make prediction about the age of abalone, thus there is a basic value for that, as Rings 
-plus 1.5 is the age.
-This value is significant, because the p-value is less than 0.0001 less than 0.05, which is pretty fit for the fact
-that the adjustment is 1.5 because the intercept is close to that.
-The coefficient of 'b_Sexl' is -0.1408, which is significant because p-value is less than 0.0001 less than 0.05. 
-This value indicates that the log count rings of infant abalones is 0.14 less than the log count
-of female abalones when all else factors remaining the same.
-This makes sense because the age of infant abalone should be smaller than adult abalone.
-The coefficient of 'b_SexM' is -0.02083, which is not significant because the p-value is 0.2074 greater 
-than 0.05. This means that the log counts of rings between male and female abalones has not significant differences,
-when other factors are the same.
-Thus, we do not need to use different models to predict the age of abalone for different sexs. 
-The coefficient of 'b_Length' is 1.4944, which is significant because p-value is less than 0.0001 less than 0.05. 
-Thus, when the length of abalone increases one unit, the log count of its rings will increases 1.4944 unit. 
-This gives us the idea that larger ablones for most of the time should be older. 
-We also have estimate of alpha here. The estimate is close to zero, which indicates that we can also use
-zero-truncated poisson regression to fit the model in this example. 
-
 From above, we can also see the results from normal negative binomial regression.
 When comparing the log-likelihood of these two models, we can see that because 
 -4296.75 < -4295.38, the zero-truncated negative binomial regression model should 
-be better than the normal one. 
+be better than the normal one.   
 However, we should notice that the difference is not very big.
 Thus, for this dataset, choosing either one of the models will not make 
 big difference to the final results. 
