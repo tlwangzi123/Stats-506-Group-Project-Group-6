@@ -9,3 +9,4 @@ The folder pictures_sas contains pictures showing results of gp.sas.
 The file gp.do is the Stata code that Junfeng Luo wrote.  
 The folder stata_picture contains pictures showing results of gp.do.  
 The file to-do list contains the things we will do to finish this project.
+The file of the book "Mixed Effects Models and Extensions in Ecology with R" is the reference of the introduction part.
