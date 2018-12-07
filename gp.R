@@ -19,9 +19,10 @@ abalone_full = read.csv("abalone.csv")
 abalone = abalone_full %>%
   distinct(Rings, Sex, Length) %>%
   arrange(Rings, Sex, Length)
-dim(abalone)
+dim(abalone_full)
 summary(abalone)
 abalone[1:10,]
+dim(abalone_full)[1] - dim(abalone)[1]
 
 # Test whether our dataset is suitable to use 
 # the Zero-Truncated Negative Binomial Regression model.
@@ -30,7 +31,7 @@ sprintf("The Mean of Rings = %4.3f, and the SD of Rings = %4.3f",
 hist(abalone$Rings, xlab = "Rings", main = "Histogram of Rings")
 
 # Use Zero-Truncated Negative Binomial Regression
-t_nb1= vglm(Rings ~  Sex + Length, 
+t_nb1 = vglm(Rings ~  Sex + Length, 
             family = posnegbinomial(), data = abalone)
 summary(t_nb1)
 # Log-likelihood: -4294.895, higher than below, fits better.
@@ -40,3 +41,33 @@ summary(t_nb1)
 nb1 = glm.nb(Rings ~ Sex + Length, data = abalone)
 summary(nb1)
 # Log-likelihood: -8590.748/2 = -4295.874
+
+# Produce table showing ZTNB regression results 
+# Notice that t_nb1 is a S4 object, 
+# so we have to use "@" instead of "$"
+fit_res = tibble(
+  Item = c("First_intercept", "Second_intercept", "SexI", 
+           "SexM", "Length"),
+  Estimate = c(
+    round(as.numeric(t_nb1@coefficients["(Intercept):1"]),2), 
+    round(as.numeric(t_nb1@coefficients["(Intercept):2"]),2), 
+    round(as.numeric(t_nb1@coefficients["SexI"]),2),
+    round(as.numeric(t_nb1@coefficients["SexM"]),2),
+    round(as.numeric(t_nb1@coefficients["Length"]),2)),
+  Standard_Error = c(
+    round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["(Intercept):1"]),2),
+    round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["(Intercept):2"]),2),
+    round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["SexI"]),2),
+    round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["SexM"]),2),
+    round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["Length"]),2)
+  )
+)
+fit_res
+
+# Plot predictions
+Prediction_Rings = predict(t_nb1, abalone, type = "response")
+Prediction_Rings = cbind(Prediction_Rings,abalone)
+
+ggplot(Prediction_Rings, aes(x = Length, y = Prediction_Rings, col = Sex)) +
+  geom_line() +
+  facet_wrap(~ Sex)
