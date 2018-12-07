@@ -370,7 +370,7 @@ replace Sex1 = 2 if Sex == "M"
 label define Sex_codes 0 "F" 1 "I" 2 "M", replace
 ```
 
-Relabel them as *values*, *Sex1*, *Sex_codes*. Save the new dataset.
+Relabel *Sex1*. Save the new dataset.
 ```{stata relabel, echo = TRUE, message = FALSE, eval = FALSE}
 label values Sex1 Sex_codes
 save abalone, replace
