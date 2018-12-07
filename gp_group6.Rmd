@@ -4,20 +4,21 @@ author: 'Group 6: Zi Wang, Dong Ding and Junfeng Luo'
 date: "12/7/2018"
 output: html_document
 ---
-## Introduction to Zero-Truncated Negative Binomial Regression
+## Introduction
 Zero-truncated Negative Binomial Regression is used to model count data 
 for which the value zero cannot occur and for which over dispersion exists. 
-There are a lot of response variables that cannot have a value of 0, 
-such as the duration patients are in hospital and the age of an animal. 
+There are a lot of count variables that cannot have a value of 0, 
+such as the duration patients are in hospital and the age(measured in years)
+of an animal. 
 When people want to use regression on these count variables, 
 they may want to use Negative Binomial Regression first 
 because it is a useful model for the count data. 
-However, it is the underlying assumption of Negative Binomial distributions 
-that may cause a problem as these distributions allow zeros 
-within their range of possible values. If the mean of the response is small, 
-and it does not contain zeros,then the estimated parameters and standard errors
-obtained by GLM may be biased, which means 
-the Negative Binomial Regression model does not fit well. 
+However, the underlying assumption of Negative Binomial distributions 
+may cause a problem because the range of these distributions include zero. 
+If the mean of the response is small, 
+and it does not contain zeros, then the estimated parameters and standard errors
+obtained by GLM may be biased, which may cause bad effects 
+when interpreting the results using the esimated parameters.
 In this situation, the Zero-Truncated Negative Binomial Regression model 
 can be used to solve this problem.
 The formula of the Zero-Truncated Negative Binomial Regression model is:
@@ -29,18 +30,42 @@ The linear predictor: $$ \eta_{i} = \beta_{0} + \beta_{1}X_{i1} +...+ \beta_{p}X
 
 ### Data Background
 The data used in this tutorial is the Abalone Dataset, which comes from 
-an original study about The Population Biology of Abalone by Warwick J Nash, 
+an original study called "The Population Biology of Abalone 
+(_Haliotis_ species) in Tasmania. I. Blacklip Abalone (_H. rubra_) 
+from the North Coast and Islands of Bass Strait" by Warwick J Nash, 
 Tracy L Sellers, Simon R Talbot, Andrew J Cawthorn and Wes B Ford (1994). 
-The link of the data: https://www.kaggle.com/rodolfomendes/abalone-dataset . 
+The link of the data: https://www.kaggle.com/rodolfomendes/abalone-dataset .
+This data has 4177 rows and 9 columns. 
 We will focusing on the following variables: 
 Rings(Can give the age of the Abalone in years by adding 1.5), 
 Sex(M, F, and I (infant)) and Length(Longest shell measurement). 
-The response variable is Rings.
+The response variable is Rings. Since every abalone have Rings(as a symbol 
+that can represent the age of abalone), we think Rings are zero-truncated 
+and may suitable to be treated as the response variable of the Zero-Truncated Negative Binomial Regression model.
+
+### Overview of the examples analyzing the Abalone data
+We will use three languages: R(using packages `VGAM`, `tidyverse` and `MASS`),
+SAS and Stata to analyze the abalone data. In all of these three parts, 
+we do the following things: load and clean the data first, 
+and then visualize the response *Rings* to test 
+whether the data is suitable to use 
+the Zero-Truncated Negative Binomial Regression model. In addition, we use both
+Zero-Truncated Negative Binomial Regression and Negative Binomial Regression on
+this data and use log-likelihood to compare. At last, we interpret the fitting 
+results of the Zero-Truncated Negative Binomial Regression. Besides, 
+we plot the prediction to visualize the regression results, and 
+produce a nicely formatted table to show the regression results.    
+The R code can be seen here: https://github.com/tlwangzi123/Stats-506-Group-Project-Group-6/blob/master/gp.R    
+The SAS code can be seen here:
+https://github.com/tlwangzi123/Stats-506-Group-Project-Group-6/blob/master/gp.sas  
+The Stata code can be seen here:
+https://github.com/tlwangzi123/Stats-506-Group-Project-Group-6/blob/master/gp.do  
 
 ## Languages {.tabset .tabset-fade}
 
-### R
+### R {.tabset .tabset-fade}
 
+#### Data cleaning
 Load the data into R using `read.csv`
 ```{r import, echo = TRUE,message = FALSE}
 library(VGAM)
@@ -55,7 +80,7 @@ by all variables in incresing order, because in the SAS part we use
 the command `proc sort` with option `noduplicate` to get a data 
 that do not have duplicate rows. 
 Besides, we show the dimension and the summary of the new data 
-named *abalone*. 
+named *abalone*.
 ```{r select, echo = TRUE}
 abalone = abalone_full %>%
   distinct(Rings, Sex, Length) %>%
@@ -67,11 +92,18 @@ dim(abalone)
 summary(abalone)
 ```
 
+Show the numbers of duplicate rows:
+```{r dup, echo = TRUE}
+dim(abalone_full)[1] - dim(abalone)[1]
+```
+So, we drop 2507 duplicate rows.
+
 Show the first 10 rows of the data *abalone*:
 ```{r show_1, echo = TRUE}
 abalone[1:10,]
 ```
 
+#### Data exploration
 Now, we are going to visualize the response *Rings* to test whether our dataset 
 is suitable to use the Zero-Truncated Negative Binomial Regression model.   
 At first, from the summary of the data and the decription of the variables, 
@@ -92,7 +124,7 @@ and exists over dispersion.
 Therefore, the Zero-Truncated Negative Binomial Regression model 
 is suitable for modeling our dataset.
 
-
+#### ZTNB Regression
 Use function `vglm` in `VGAM` package to use 
 Zero-Truncated Negative Binomial Regression on the data *abalone* 
 ```{r TNB_1, echo = TRUE}
@@ -102,6 +134,17 @@ summary(t_nb1)
 ```
 The Log-likelihood of the model is -4294.895
 
+Now, interpret the fitting result.   
+From the summary of the Zero-Truncated Negative Binomial Regression model,
+*SexI* has a estimate coefficient -0.14, and *SexI* is significant(because the p-value of *SexI* is 3.28e-10 < 0.05), 
+which means the log count of Rings for a Infant Abalone is obviously less compared to Female Abalone by 0.14 when the length of these Abalones are the same.    
+*SexM* has a estimate coefficient -0.02, and *SexM* is not significant(because the p-value of *SexM* is 0.232 > 0.05), which means the log count of Rings for a Infant Abalone is inconspicuously less compared to Female Abalone by 0.02 when the length of these Abalones are the same.  
+*Length* has a estimate coefficient 1.5, and *Length* is not significant(because the p-value of *Length* < 2e-16 < 0.05), which means the log count of Rings has a obviously increase by 1.5 for each mm increase in Longest shell measurement when the sex keeps the same.  
+The first intercept((Intercept):1) is 1.63, this shows that the log count of the Rings of the Abalone 1.63 when all predictors equal zero.  
+The second intercept((Intercept):2) is 5.19, which means the value of
+the over dispersion parameter *k* in the Zero-Truncated Negative Binomial Regression model is 5.19.
+
+#### NB Regression and Comparison of the two models
 Fit the Negative Binomial Regression using `glm.nb` in `MASS` package 
 on the data *abalone*
 ```{r NB_1, echo = TRUE}
@@ -115,31 +158,10 @@ Because -4294.895 > -4295.874, we can conclude that
 the Zero-Truncated Negative Binomial Regression model fits better than 
 the Negative Binomial Regression model.
 
-Now, interpret the fitting result.   
-From the summary of the Zero-Truncated Negative Binomial Regression model,
-*SexI* has a estimate coefficient -0.14064, and *SexI* is significant(because the p-value of *SexI* is 3.28e-10 < 0.05), 
-which means the log count of Rings for a Infant Abalone is obviously less compared to Female Abalone by 0.14064 when the length of these Abalones are the same.    
-*SexM* has a estimate coefficient 0.02083, and *SexM* is not significant(because the p-value of *SexM* is 0.232 > 0.05), which means the log count of Rings for a Infant Abalone is inconspicuously less compared to Female Abalone by 0.02083 when the length of these Abalones are the same.  
-*Length* has a estimate coefficient 1.50445, and *Length* is not significant(because the p-value of *Length* < 2e-16 < 0.05), which means the log count of Rings has a obviously increase by 1.50445 for each mm increase in Longest shell measurement when the sex keeps the same.
-The first intercept((Intercept):1) is 1.63153, this shows that the log count of the Rings of the Abalone 1.63153 when all predictors equal zero.  
-The second intercept((Intercept):2) is 5.19065, which means the value of
-the over dispersion parameter *k* in the Zero-Truncated Negative Binomial Regression model is 5.19065.
 
-Besides, we can plot the prediction to visualize the regression results.
-```{r plot, echo = TRUE}
-Prediction_Rings = predict(t_nb1, abalone, type = "response")
-Prediction_Rings = cbind(Prediction_Rings,abalone)
+### SAS {.tabset .tabset-fade}
 
-ggplot(Prediction_Rings, aes(x = Length, y = Prediction_Rings, col = Sex))  +
-  geom_point() +
-  geom_line() +
-  facet_wrap(~ Sex)
-```
-
-From this plot, we can see: the Rings for a Infant Abalone is obviously less compared to Female Abalone when the length of these Abalones are the same, while the Rings for a Infant Abalone is inconspicuously less compared to Female Abalone when the length of these Abalones are the same. This is consistent with the conclusion in the interpretion part.
-
-### SAS
-
+#### Data cleaning
 Firstly, we need to load our dataset into sas.
 Here, because we directly use the csv file, 
 we will use the command `infile`, and `dlm` as ','.
@@ -193,6 +215,7 @@ Below is the result.
 
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/firsttenrows.jpg)
 
+#### Data exploration
 Next, we should have a basic impression of each 
 variable.
 We start with *Sex*, and we use command `proc freq` and `tables`
@@ -247,6 +270,7 @@ set abalone;
 run;
 ```
 
+#### ZTNB Regression
 We use the command `proc nlmixed` to run zero-truncated negative binomial 
 regression about the dataset.
 ```{r SAS_zero_truncated_nbr, echo=TRUE, eval=FALSE}
@@ -263,6 +287,7 @@ run;
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/zero-tnb1.jpg)
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/zero-tnb2.jpg)
 
+#### NB Regression and Comparison of the two models
 We also want to compare the results of zero-truncted negative binomial
 regression, and normal negative binomial regression.
 We use command `proc genmod` to do the normal negative binomial regression.
@@ -276,7 +301,9 @@ run;
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/pictures_sas/nb2.jpg)
 
 
-### Stata
+### Stata {.tabset .tabset-fade}
+
+#### Data cleaning
 Load the data into Stata using `import`.
 ```{stata read, echo = TRUE, message = FALSE, eval = FALSE}
 clear
@@ -310,7 +337,7 @@ tab1 Sex1
 ```
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/tabulation_Sex1.png)
 
-
+#### Data exploration
 Visualize the summarize of *Length* and *Rings*.
 ```{stata summarize, echo = TRUE, message = FALSE, eval = FALSE}
 summarize Length Rings
@@ -323,6 +350,7 @@ histogram Rings, discrete
 ```
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/master/stata_picture/histogram_Rings.png)
 
+#### ZTNB Regression
 The `tnbreg` command will analyze models that are left truncated on any value not just zero. The `ztnb` command previously was used for zero-truncated negative binomial regression, but is no longer supported in Stata12 and has been superseded by `tnbreg`.
 ```{stata tnbreg, echo = TRUE, message = FALSE, eval = FALSE}
 tnbreg Rings i.Sex1 Length, ll(0)
@@ -338,7 +366,7 @@ The output looks very much like the output from an OLS regression:
 
 * Next comes the header information. On the right-hand side the number of observations used (1670) is given along with the likelihood ratio chi-squared with three degrees of freedom for the full model, followed by the p-value for the chi-square. The model, as a whole, is statistically significant.
 
-* The header also includes a pseudo-R2, which is quite low in this example (0.0766).
+* The header also includes a pseudo-R2, which is quite low in this example (0.08).
 
 * Below the header you will find the zero-truncated negative binomial coefficients for each of the variables along with standard errors, z-scores, p-values and 95% confidence intervals for each coefficient.
 
@@ -350,15 +378,15 @@ The output looks very much like the output from an OLS regression:
 
 Looking through the results we see the following:
 
-* The value of the coefficient for *Sex1_M*, -0.0208333, suggests that the log count of *Rings* decreases by 0.0208333 for each unit increase in *Sex1_I* group. This coefficient is not statistically significant.
+* The value of the coefficient for *Sex1_M*, -0.02, suggests that the log count of *Rings* decreases by 0.02 for each unit increase in *Sex1_I* group. This coefficient is not statistically significant.
 
-* The coefficient for *Sex1_I*, -0.1406382, is significant and indicates that the log count of *Rings* for Infants is 0.1406382 less than for non-Infants.
+* The coefficient for *Sex1_I*, -0.14, is significant and indicates that the log count of *Rings* for Infants is 0.14 less than for non-Infants.
 
-* The log count of *length* is 1.504444 more.
+* The log count of *length* is 1.50 more.
 
-* The value of the constant (_cons), 1.631531 is log count of the *Rings* when all of the predictors equal zero.
+* The value of the constant (_cons), 1.63 is log count of the *Rings* when all of the predictors equal zero.
 
-
+#### NB Regression and Comparison of the two models
 We fit it again using *Negative Binomial Regression* using `nbreg`.
 ```{stata nbreg, echo = TRUE, message = FALSE, eval = FALSE}
 nbreg Rings i.Sex1 Length
@@ -367,15 +395,55 @@ nbreg Rings i.Sex1 Length
 ![](https://raw.githubusercontent.com/tlwangzi123/Stats-506-Group-Project-Group-6/Junfeng-Luo/stata_picture/nbrg_part2.png)
 
 Compare these two models using Log-likelihood:  
-Because -4294.9849 > -4295.3738, we can conclude that the Zero-Truncated Negative Binomial Regression model fits better than the Negative Binomial Regression model.
+Because -4294.9849 > -4295.3738, we can conclude that 
+the Zero-Truncated Negative Binomial Regression model fits better 
+than the Negative Binomial Regression model.
+
+\pagebreak
+
+
+
+## Conclusion
+Produce a nicely formatted table to show the regression results:
+```{r table, echo = TRUE}
+fit_res = tibble(
+                 Item = c("First_intercept", "Second_intercept", "SexI", 
+                          "SexM", "Length"),
+                 Estimate = c(
+                   round(as.numeric(t_nb1@coefficients["(Intercept):1"]),2), 
+                   round(as.numeric(t_nb1@coefficients["(Intercept):2"]),2), 
+                   round(as.numeric(t_nb1@coefficients["SexI"]),2),
+                   round(as.numeric(t_nb1@coefficients["SexM"]),2),
+                   round(as.numeric(t_nb1@coefficients["Length"]),2)),
+                 Standard_Error = c(
+                   round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["(Intercept):1"]),2),
+                   round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["(Intercept):2"]),2),
+                   round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["SexI"]),2),
+                   round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["SexM"]),2),
+                   round(as.numeric((summary(t_nb1)@coef3[,"Std. Error"])["Length"]),2))
+)
+cap = '**Table 1.** The Estimate and Standard Error of Regression Coefficients.'
+knitr::kable(fit_res, align = 'r', caption = cap)
+```
+
+Besides, we can plot the prediction to visualize the regression results.
+```{r plot, echo = TRUE}
+Prediction_Rings = predict(t_nb1, abalone, type = "response")
+Prediction_Rings = cbind(Prediction_Rings,abalone)
+
+ggplot(Prediction_Rings, aes(x = Length, y = Prediction_Rings, col = Sex)) +
+  geom_line() +
+  facet_wrap(~ Sex)
+```
+
+From this plot, we can see: At first, the Rings for Infant Abalone is obviously less compared to Female Abalone when the length of these Abalones are the same, while the Rings for Male Abalone is inconspicuously less compared to Female Abalone when the length of these Abalones are the same. Secondly, the Rings for Abalone increases as the length of Abalone increases. This is consistent with the interpretion fitting results.
 
 ## Things to Consider
-From the example above, we can see that the coefficient of Zero-Truncated Negative Binomial Regression in SAS part has some differences between that in R and Stata. Because it may cause some accuracy errors when to use iteration method in SAS to maximize the log-likelihood function in order to find the estimators because of limitation in R in the convergence procedure.  
-Besides, we can see that even if the Log-likelihood criterion 
+From the example above, we can see that even if the Log-likelihood criterion 
 shows the Zero-Truncated Negative Binomial Regression model fits better than 
 the Negative Binomial Regression model, the estimated parameters and 
 standard errors obtained by Negative Binomial Regression and 
-Zero-Truncated Negative Binomial Regression is very similar.
+Zero-Truncated Negative Binomial Regression is very similar.  
 Thus, we can conclude that if the mean is not very close to 0, 
 the truncation problem can be ignored if there is no strict limit of 
 the accuracy for the regression results. In this case, both 
@@ -383,7 +451,9 @@ the Negative Binomial Regression model and
 the Zero-Truncated Negative Binomial Regression model are good models.
 
 ## References
-1. http://highstat.com/index.php/mixed-effects-models-and-extensions-in-ecology-with-r
+1. Mixed Effects Models and Extensions in Ecology with R (2009) 
+Zuur, Ieno, Walker, Saveliev, Smith     
+(link to the book is [here](<https://github.com/tlwangzi123/Stats-506-Group-Project-Group-6/blob/master/%5BStatistics%20for%20Biology%20and%20Health%5D%20Alain%20F.%20Zuur%2C%20Elena%20N.%20Ieno%2C%20Neil%20Walker%2C%20Anatoly%20A.%20Saveliev%2C%20Graham%20M.%20Smith%20(auth.)%20-%20Mixed%20Effects%20Models%20and%20Extensions%20in%20Ecology%20with%20R%20(2009%2C%20Springer-Verlag%20New%20York).pdf>))
 2. Wikipedia: Truncated regression model
 3. https://stats.idre.ucla.edu/r/dae/zero-truncated-negative-binomial/
 4. https://stats.idre.ucla.edu/sas/dae/zero-truncated-negative-binomial/
