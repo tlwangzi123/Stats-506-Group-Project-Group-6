@@ -1,3 +1,19 @@
+/* 
+Course: Stat 506
+
+Assignment: Group Project
+
+Group: Group 6
+
+Content: Zero-truncated negative binomial regression Tutorial
+  
+Data: Abalone dataset from https://www.kaggle.com/rodolfomendes/abalone-dataset
+
+Author: Dong Ding
+
+Date: December 7th, 2018
+*/
+
 /* read in the dataset we chose*/
 data abalone_full;
   infile './abalone.csv' dlm = ',' dsd missover firstobs = 2;
